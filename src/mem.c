@@ -12,13 +12,27 @@
 //-------------------------------------------------------------
 // mem_init
 //-------------------------------------------------------------
+struct tete * tete;
 /**
  * Initialize the memory allocator.
  * If already init it will re-init.
 **/
 void mem_init() {
-    //TODO: implement
-	assert(! "NOT IMPLEMENTED !");
+	// struct * tete init;
+	struct fb * bfict;
+	struct fb * mem1;
+	
+	tete = mem_space_get_addr();
+	bfict = tete + sizeof(tete);
+	tete->next = bfict;
+	tete->fit = mem_first_fit;
+
+	mem1 = bfict + sizeof(bfict);
+	bfict->size = NULL;
+	bfict->next = mem1;
+
+	mem1->size = mem_space_get_size() - sizeof(struct fb) * 2 - sizeof(struct tete);
+	mem1->next = NULL;
 }
 
 //-------------------------------------------------------------
