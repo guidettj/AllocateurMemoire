@@ -23,12 +23,12 @@ void mem_init() {
 	struct fb * mem1;
 	
 	tete = mem_space_get_addr();
-	bfict = tete + sizeof(tete);
+	bfict = (struct fb *) (tete + sizeof(tete));
 	tete->next = bfict;
 	tete->fit = mem_first_fit;
 
 	mem1 = bfict + sizeof(bfict);
-	bfict->size = NULL;
+	bfict->size = 0;
 	bfict->next = mem1;
 
 	mem1->size = mem_space_get_size() - sizeof(struct fb) * 2 - sizeof(struct tete);
@@ -68,12 +68,25 @@ void mem_free(void *zone) {
 	assert(! "NOT IMPLEMENTED !");
 }
 
-//-------------------------------------------------------------
+//----------------------------------------------------------------
 // Itérateur(parcours) sur le contenu de l'allocateur
 // mem_show
-//-------------------------------------------------------------
+// _mem_show fonction bis permettant la recursivite sur les blocks
+//----------------------------------------------------------------
+void _mem_show(void (*print)(void *, size_t, int free), struct fb * block) {
+	if (block == NULL)
+		return;
+
+	print(block, block->size, block->size != 0);
+	return _mem_show(print, block->next);
+}
+
 void mem_show(void (*print)(void *, size_t, int free)) {
-    //TODO: implement
+    struct fb * block;
+	block = mem_space_get_addr() + sizeof(tete) + sizeof(struct fb);
+	_mem_show(print, block);
+	
+	//TODO: implement
 	assert(! "NOT IMPLEMENTED !");
 }
 
