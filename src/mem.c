@@ -82,7 +82,15 @@ void mem_show(void (*print)(void *, size_t, int free)) {
 //-------------------------------------------------------------
 void mem_set_fit_handler(mem_fit_function_t *mff) {
 	//TODO: implement
-	assert(! "NOT IMPLEMENTED !");
+		if (*mff == mem_worst_fit) {
+		tete->fit = mem_worst_fit;
+	}
+	else if (*mff ==  mem_best_fit) {
+		tete->fit =  mem_best_fit;
+	}
+	else  {
+		tete->fit =  mem_first_fit;
+	}
 }
 
 //-------------------------------------------------------------
