@@ -41,10 +41,20 @@ void mem_init() {
 /**
  * Allocate a bloc of the given size.
 **/
+struct fb *trouve_queue(){
+	
+} 
+
 void *mem_alloc(size_t size) {
-	//TODO: implement
-	assert(! "NOT IMPLEMENTED !");
-    return NULL;
+	struct fb * queue;
+	queue->next = null;
+	queue->size = size;
+
+	strcut fb * body = trouve_queue();
+	body->next = queue;
+	// //TODO: implement
+	// assert(! "NOT IMPLEMENTED !");
+    // return NULL;
 }
 
 //-------------------------------------------------------------
