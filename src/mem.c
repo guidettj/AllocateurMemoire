@@ -17,6 +17,18 @@ struct tete * tete;
  * Initialize the memory allocator.
  * If already init it will re-init.
 **/
+
+/** 
+ * Put b2 next to b1 in the memory
+*/
+void place_next_to(struct fb * b1, struct fb * b2){
+	b2 = b1 + sizeof(struct fb) + b1->size;
+}
+
+/**
+ * Initialize the memory allocator.
+ * If already init it will re-init.
+**/
 void mem_init() {
 	// struct * tete init;
 	struct fb * bfict;
@@ -27,11 +39,14 @@ void mem_init() {
 	tete->next = bfict;
 	tete->fit = mem_first_fit;
 
-	mem1 = bfict + sizeof(bfict);
+	place_next_to(bfict, mem1);
+	// mem1 = bfict + sizeof(bfict);
 	bfict->size = 0;
+	bfict->occupied = 0;
 	bfict->next = mem1;
 
 	mem1->size = mem_space_get_size() - sizeof(struct fb) * 2 - sizeof(struct tete);
+	mem1->occupied = 0;
 	mem1->next = NULL;
 }
 
@@ -41,8 +56,10 @@ void mem_init() {
 /**
  * Allocate a bloc of the given size.
 **/
-struct fb *trouve_queue(){
-	
+struct fb *trouve_queue(struct fb * b){
+	if (b->next == NULL)
+		return b;
+	return trouve_queue(b->next);
 } 
 
 void *mem_alloc(size_t size) {
@@ -50,11 +67,8 @@ void *mem_alloc(size_t size) {
 	queue->next = null;
 	queue->size = size;
 
-	strcut fb * body = trouve_queue();
+	struct fb * body = trouve_queue();
 	body->next = queue;
-	// //TODO: implement
-	// assert(! "NOT IMPLEMENTED !");
-    // return NULL;
 }
 
 //-------------------------------------------------------------
@@ -87,7 +101,7 @@ void _mem_show(void (*print)(void *, size_t, int free), struct fb * block) {
 	if (block == NULL)
 		return;
 
-	print(block, block->size, block->size != 0);
+	print(block, block->size, block->occupied);
 	return _mem_show(print, block->next);
 }
 
@@ -95,9 +109,6 @@ void mem_show(void (*print)(void *, size_t, int free)) {
     struct fb * block;
 	block = mem_space_get_addr() + sizeof(tete) + sizeof(struct fb);
 	_mem_show(print, block);
-	
-	//TODO: implement
-	assert(! "NOT IMPLEMENTED !");
 }
 
 //-------------------------------------------------------------

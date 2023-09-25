@@ -16,6 +16,7 @@
 struct fb{
     size_t size;
     struct fb *next;
+    int occupied;
 };
 
 struct tete{
