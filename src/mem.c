@@ -132,14 +132,26 @@ void mem_set_fit_handler(mem_fit_function_t *mff) {
 //-------------------------------------------------------------
 mem_free_block_t *mem_first_fit(mem_free_block_t *first_free_block, size_t wanted_size) {
     //TODO: implement
-	assert(! "NOT IMPLEMENTED !");
+	while (first_free_block!=NULL){
+		if(first_free_block.mem.mem_space_get_size() >= wanted_size){
+			return first_free_block;
+		}
+		first_free_block = first_free_block->next;
+	}
 	return NULL;
 }
 //-------------------------------------------------------------
 mem_free_block_t *mem_best_fit(mem_free_block_t *first_free_block, size_t wanted_size) {
     //TODO: implement
-	assert(! "NOT IMPLEMENTED !");
-	return NULL;
+	size_t diffTaille = list->size - size;
+	mem_free_block_t* adresse = list;
+	while(list != NULL){
+		if(diffTaille < list->size - size){
+			diffTaille = list->size - size;
+			adresse = list;
+		}
+	}
+	return adresse;
 }
 
 //-------------------------------------------------------------
