@@ -56,3 +56,38 @@ On peu générer une archive des sources avec :
 ```sh
 make archive
 ```
+
+Discussion d'idees
+==================
+
+## V.1 2 structures distinctes `bb` et `fb`
+
+```cpp
+struct fb {
+  size_t size;
+  struct fb * next;
+};
+
+struct bb {
+  size_t size;
+  struct bb * next;
+};
+```
+
+### mem_alloc
+
+Allocation de `n` octets de memoire
+
+* `n` octets de disponible dans l'une des instances de fb `libre` : 
+
+  1. cree un nouveau bb `busy`, avec adresse de `libre` (`busy = f`)
+  2. le lie correctement entre les bb existant
+  3. deplace `libre` (`libre += busy->size`)
+    * si la memoire apres  
+    ```cpp 
+    struct bb *
+    ```
+
+### free
+
+
