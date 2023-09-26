@@ -136,14 +136,19 @@ mem_free_block_t *mem_first_fit(mem_free_block_t *first_free_block, size_t wante
 }
 //-------------------------------------------------------------
 mem_free_block_t *mem_best_fit(mem_free_block_t *first_free_block, size_t wanted_size) {
-    //TODO: implement
-	size_t diffTaille = first_free_block->size - wanted_size;
-	mem_free_block_t* adresse = first_free_block;
+	mem_free_block_t * adresse = mem_first_fit(first_free_block, wanted_size);
+
 	while(first_free_block != NULL){
-		if(diffTaille < first_free_block->size - wanted_size){
-			diffTaille = first_free_block->size - wanted_size;
-			adresse = first_free_block;
+		if(first_free_block->size > wanted_size){
+			size_t diffTaille = first_free_block->size - wanted_size;
+			
+
+			if(diffTaille < first_free_block->size - wanted_size){
+				diffTaille = first_free_block->size - wanted_size;
+				adresse = first_free_block;
+			}
 		}
+		first_free_block = first_free_block->next;
 	}
 	return adresse;
 }
