@@ -34,7 +34,7 @@ void mem_init() {
 	mem_free_block_t * bfict;
 	mem_free_block_t * mem1;
 	
-	tete = mem_space_get_addr();
+	tete = (struct tete *) mem_space_get_addr();
 	bfict = (mem_free_block_t *) (tete + sizeof(tete));
 	tete->next = bfict;
 	tete->fit = mem_first_fit;
@@ -60,15 +60,21 @@ mem_free_block_t *trouve_queue(mem_free_block_t * b){
 	if (b->next == NULL)
 		return b;
 	return trouve_queue(b->next);
-} 
+}
+
+mem_free_block_t *trouve_parent(mem_free_block_t * b, mem_free_block_t * b_cherche){
+	if(b->next == b_cherche)
+		return b;
+	return trouve_parent(b->next, b_cherche);
+}
 
 void *mem_alloc(size_t size) {
-	mem_free_block_t * queue;
-	queue->next = null;
-	queue->size = size;
+	struct tete * tete = (struct tete *) mem_space_get_addr();
 
-	mem_free_block_t * body = trouve_queue();
-	body->next = queue;
+	mem_free_block_t * libre = (tete->fit)(tete->next, size);
+	mem_free_block_t * p_libre = trouve_parent(tete->next, libre);
+	
+	
 }
 
 //-------------------------------------------------------------
@@ -102,7 +108,7 @@ void _mem_show(void (*print)(void *, size_t, int free), mem_free_block_t * block
 	if (block == NULL)
 		return;
 
-	print(block, block->size, block->occupied);
+	print(block, block->size, 1);
 	return _mem_show(print, block->next);
 }
 
@@ -117,7 +123,7 @@ void mem_show(void (*print)(void *, size_t, int free)) {
 //-------------------------------------------------------------
 void mem_set_fit_handler(mem_fit_function_t *mff) {
 	//TODO: implement
-	struct * tete tete = mem_space_get_addr();
+	struct * tete tete = (struct tete *) mem_space_get_addr();
 	tete->fit = mff;
 }
 
@@ -147,6 +153,7 @@ mem_free_block_t *mem_best_fit(mem_free_block_t *first_free_block, size_t wanted
 	}
 	return adresse;
 }
+
 
 //-------------------------------------------------------------
 mem_free_block_t *mem_worst_fit(mem_free_block_t *first_free_block, size_t wanted_size) {

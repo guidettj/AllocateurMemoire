@@ -15,7 +15,7 @@
 
 typedef struct mem_free_block_s{
     size_t size;
-    struct fb *next;
+    mem_free_block_t *next;
 }mem_free_block_t;
 
 struct bb{
@@ -23,7 +23,7 @@ struct bb{
 };
 
 struct tete{
-    struct fb *next;
+    mem_free_block_t *next;
     mem_fit_function * fit;
 };
 
