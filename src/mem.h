@@ -13,15 +13,18 @@
 /* -----------------------------------------------*/
 
 
-struct fb{
+typedef struct mem_free_block_s{
     size_t size;
     struct fb *next;
-    int occupied;
+}mem_free_block_t;
+
+struct bb{
+    size_t size;
 };
 
 struct tete{
     struct fb *next;
-    void * fit;
+    mem_fit_function * fit;
 };
 
 void *mem_alloc(size_t);

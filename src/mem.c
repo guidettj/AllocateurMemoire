@@ -12,7 +12,7 @@
 //-------------------------------------------------------------
 // mem_init
 //-------------------------------------------------------------
-struct tete * tete;
+//struct tete * tœete; Pas le droit
 /**
  * Initialize the memory allocator.
  * If already init it will re-init.
@@ -30,7 +30,7 @@ void place_next_to(struct fb * b1, struct fb * b2){
  * If already init it will re-init.
 **/
 void mem_init() {
-	// struct * tete init;
+	struct * tete tete;
 	struct fb * bfict;
 	struct fb * mem1;
 	
@@ -77,6 +77,7 @@ void *mem_alloc(size_t size) {
 size_t mem_get_size(void * zone)
 {
     //TODO: implement
+	//chercher dans fb et si ca yest pas caster en bb et on pourra recup la taille
 	assert(! "NOT IMPLEMENTED !");
     return 0;
 }
@@ -116,15 +117,8 @@ void mem_show(void (*print)(void *, size_t, int free)) {
 //-------------------------------------------------------------
 void mem_set_fit_handler(mem_fit_function_t *mff) {
 	//TODO: implement
-		if (*mff == mem_worst_fit) {
-		tete->fit = mem_worst_fit;
-	}
-	else if (*mff ==  mem_best_fit) {
-		tete->fit =  mem_best_fit;
-	}
-	else  {
-		tete->fit =  mem_first_fit;
-	}
+	struct * tete tete = mem_space_get_addr();
+	tete->fit = mff;
 }
 
 //-------------------------------------------------------------
