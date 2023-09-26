@@ -21,8 +21,8 @@
 /** 
  * Put b2 next to b1 in the memory
 */
-void place_next_to(struct fb * b1, struct fb * b2){
-	b2 = b1 + sizeof(struct fb) + b1->size;
+void place_next_to(mem_free_block_t * b1, mem_free_block_t * b2){
+	b2 = b1 + sizeof(mem_free_block_t) + b1->size;
 }
 
 /**
@@ -31,11 +31,11 @@ void place_next_to(struct fb * b1, struct fb * b2){
 **/
 void mem_init() {
 	struct * tete tete;
-	struct fb * bfict;
-	struct fb * mem1;
+	mem_free_block_t * bfict;
+	mem_free_block_t * mem1;
 	
 	tete = mem_space_get_addr();
-	bfict = (struct fb *) (tete + sizeof(tete));
+	bfict = (mem_free_block_t *) (tete + sizeof(tete));
 	tete->next = bfict;
 	tete->fit = mem_first_fit;
 
@@ -45,7 +45,7 @@ void mem_init() {
 	bfict->occupied = 0;
 	bfict->next = mem1;
 
-	mem1->size = mem_space_get_size() - sizeof(struct fb) * 2 - sizeof(struct tete);
+	mem1->size = mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete);
 	mem1->occupied = 0;
 	mem1->next = NULL;
 }
@@ -56,18 +56,18 @@ void mem_init() {
 /**
  * Allocate a bloc of the given size.
 **/
-struct fb *trouve_queue(struct fb * b){
+mem_free_block_t *trouve_queue(mem_free_block_t * b){
 	if (b->next == NULL)
 		return b;
 	return trouve_queue(b->next);
 } 
 
 void *mem_alloc(size_t size) {
-	struct fb * queue;
+	mem_free_block_t * queue;
 	queue->next = null;
 	queue->size = size;
 
-	struct fb * body = trouve_queue();
+	mem_free_block_t * body = trouve_queue();
 	body->next = queue;
 }
 
@@ -98,7 +98,7 @@ void mem_free(void *zone) {
 // mem_show
 // _mem_show fonction bis permettant la recursivite sur les blocks
 //----------------------------------------------------------------
-void _mem_show(void (*print)(void *, size_t, int free), struct fb * block) {
+void _mem_show(void (*print)(void *, size_t, int free), mem_free_block_t * block) {
 	if (block == NULL)
 		return;
 
@@ -107,8 +107,8 @@ void _mem_show(void (*print)(void *, size_t, int free), struct fb * block) {
 }
 
 void mem_show(void (*print)(void *, size_t, int free)) {
-    struct fb * block;
-	block = mem_space_get_addr() + sizeof(tete) + sizeof(struct fb);
+    mem_free_block_t * block;
+	block = mem_space_get_addr() + sizeof(tete) + sizeof(mem_free_block_t);
 	_mem_show(print, block);
 }
 
