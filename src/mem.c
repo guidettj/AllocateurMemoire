@@ -30,7 +30,7 @@ void place_next_to(mem_free_block_t * b1, mem_free_block_t * b2){
  * If already init it will re-init.
 **/
 void mem_init() {
-	struct * tete tete;
+	struct tete * tete;
 	mem_free_block_t * bfict;
 	mem_free_block_t * mem1;
 	
@@ -39,14 +39,11 @@ void mem_init() {
 	tete->next = bfict;
 	tete->fit = mem_first_fit;
 
-	place_next_to(bfict, mem1);
-	// mem1 = bfict + sizeof(bfict);
+	mem1 = bfict + sizeof(bfict);
 	bfict->size = 0;
-	bfict->occupied = 0;
 	bfict->next = mem1;
 
 	mem1->size = mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete);
-	mem1->occupied = 0;
 	mem1->next = NULL;
 }
 
@@ -63,8 +60,12 @@ mem_free_block_t *trouve_queue(mem_free_block_t * b){
 }
 
 mem_free_block_t *trouve_parent(mem_free_block_t * b, mem_free_block_t * b_cherche){
+	if(b_cherche == NULL || b == NULL)
+		return NULL;
+
 	if(b->next == b_cherche)
 		return b;
+
 	return trouve_parent(b->next, b_cherche);
 }
 
@@ -77,16 +78,19 @@ void *mem_alloc(size_t size) {
 		return NULL;
 		
 	mem_free_block_t * p_libre = trouve_parent(tete->next, libre);
-	struct bb * busy = libre;
-	bb->size = size;
+	if (p_libre == NULL)
+		return NULL;
+
+	struct bb * busy = (struct bb * ) libre;
+	busy->size = size;
 	
 	// Aura t on de la place pour mettre un mem_free_block_t 
 	// si on attribue `size` memoire a busy ?
 	int offset = libre->size - size;
-	if(offset < 0){
+	if(offset <= 0){
 		// si <0 alors pas de place pour un struct fb
 		// on va attribuer la taille a busy
-		bb->size -= offset;
+		busy->size -= offset;
 		p_libre->next = libre->next;
 		
 		libre->size = 0;
@@ -94,7 +98,7 @@ void *mem_alloc(size_t size) {
 	}
 	else{
 		libre->size -= size;
-		libre += size + sizeof(struct bb);
+		libre = (mem_free_block_t * ) (busy + size + sizeof(struct bb));
 		p_libre->next = libre;
 	}
 
@@ -138,7 +142,7 @@ void _mem_show(void (*print)(void *, size_t, int free), mem_free_block_t * block
 
 void mem_show(void (*print)(void *, size_t, int free)) {
     mem_free_block_t * block;
-	block = mem_space_get_addr() + sizeof(tete) + sizeof(mem_free_block_t);
+	block = mem_space_get_addr() + sizeof(struct tete) + sizeof(mem_free_block_t);
 	_mem_show(print, block);
 }
 
@@ -147,7 +151,7 @@ void mem_show(void (*print)(void *, size_t, int free)) {
 //-------------------------------------------------------------
 void mem_set_fit_handler(mem_fit_function_t *mff) {
 	//TODO: implement
-	struct * tete tete = (struct tete *) mem_space_get_addr();
+	struct tete * tete = (struct tete *) mem_space_get_addr();
 	tete->fit = mff;
 }
 
