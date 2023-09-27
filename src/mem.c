@@ -75,7 +75,6 @@ void *mem_alloc(size_t size) {
 	// pas d'emplacement libre de taille `size` 
 	if (libre == NULL)
 		return NULL;
-
 		
 	mem_free_block_t * p_libre = trouve_parent(tete->next, libre);
 	struct bb * busy = libre;
@@ -83,13 +82,23 @@ void *mem_alloc(size_t size) {
 	
 	// Aura t on de la place pour mettre un mem_free_block_t 
 	// si on attribue `size` memoire a busy ?
-	if(libre->size - size < 0){
+	int offset = libre->size - size;
+	if(offset < 0){
 		// si <0 alors pas de place pour un struct fb
+		// on va attribuer la taille a busy
+		bb->size -= offset;
+		p_libre->next = libre->next;
+		
+		libre->size = 0;
+		libre = NULL;
+	}
+	else{
+		libre->size -= size;
+		libre += size + sizeof(struct bb);
+		p_libre->next = libre;
 	}
 
-	libre->size -= size;
-	libre += size + sizeof(struct bb);
-	p_libre->next = libre;
+	return busy;
 }
 
 //-------------------------------------------------------------
