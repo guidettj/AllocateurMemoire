@@ -48,8 +48,39 @@ mem_free_block_t *trouve_parent(mem_free_block_t * fb){
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 	return _trouve_parent(tete->next, fb);
 }
+
+mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
+    if(fb->next == NULL)
+        return NULL;
+
+    if((void *)fb->next > add)
+        return fb;
+
+    return fb_before_add(fb->next, add);
+}
+
+// nom de fonc doit etre tirer d'un tas de chose
+// renvoie l'adresse 
+struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
+    if(start == NULL || add == NULL || (void *)start >= next_fb)
+        return NULL;
+
+    if((void *)start == add)
+        return start;
+    
+    return pick_bb(calc_add_bb(start), add, next_fb);
+}
+
+
+struct bb *find_bb(void * add){
+    struct tete * tete = (struct tete *) mem_space_get_addr();
+    mem_free_block_t * fb = fb_before_add(tete->next, add);
+    return pick_bb((struct bb *) calc_add_fb(fb), add, (void *) (fb->next));
+}
+
+
 void fusion_(){
-	struct tete* tete = (struct tête*)mem_space_get_addr();
+	struct tete* tete = (struct tete*)mem_space_get_addr();
 	mem_free_block_t * fb1 = tete->next;
 	while(fb1 != NULL){
 		if(calc_add_fb(fb1) == fb1->next ){
@@ -65,12 +96,14 @@ void fusion_(){
 void fusion(mem_free_block_t *fb){
 	mem_free_block_t *  parent =  trouve_parent(fb);
 	if( trouve_parent(fb) == NULL)
-		return NULL;
+		return ;
+
 	if( calc_add_fb (parent) == fb){
 		parent->next = fb->next;
 		parent->size = parent->size + calc_fb(fb);
 	}
-	mem_free_block_t * child = calcul_add_fb(fb);
+
+	mem_free_block_t * child = calc_add_fb(fb);
 	if(fb->next == child){
 		fb->next = child->next;
 		fb->size = fb->size + calc_fb(child);
@@ -125,32 +158,6 @@ void mem_init() {
 /**
  * Allocate a bloc of the given size.
 **/
-
-// renvoie l'adresse du bloc libre juste avant le bloc occupe
-// NULL si un tel fb n'est pas trouve
-mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
-    if(fb->next == NULL)
-        return NULL;
-
-    if((void *)(fb->next) > add)
-        return fb;
-
-    return fb_before_add(fb->next, add);
-}
-
-// nom de fonc doit etre tirer d'un tas de chose
-// renvoie l'adresse 
-
-struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
-    if(start == NULL || add == NULL || (void *)start >= next_fb)
-        return NULL;
-
-    if((void *)start == add)
-        return start;
-    
-    return pick_bb(calc_add_bb(start), add, next_fb);
-}
-
 void *mem_alloc(size_t size) {
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 
@@ -194,12 +201,10 @@ size_t mem_get_size(void * zone)
 {
 	//chercher dans fb et si ca yest pas caster en bb et on pourra recup la taille
 	struct bb* adrStruct = find_bb(zone);
-	if(adrStruct == NULL){
-		return NULL;
-	}
-	else{
-	return adrStruct->size()
-	}
+	if(adrStruct == NULL)
+		return 0;
+	
+	return adrStruct->size;
 }
 
 //-------------------------------------------------------------
