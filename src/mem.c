@@ -24,6 +24,35 @@
 void place_next_to(mem_free_block_t * b1, mem_free_block_t * b2){
 	b2 = b1 + sizeof(mem_free_block_t) + b1->size;
 }
+void fusion_(){
+	struct tete* tete = (struct tête*)mem_space_get_addr();
+	mem_free_block_t * fb1 = tete->next;
+	while(fb1 != NULL){
+		if(calc_add_fb(fb1) == fb1->next ){
+			mem_free_block_t * fb2 = fb1->next;
+			if (fb2->next != NULL)
+				fb1->next = fb2->next;
+			else
+				fb1 = NULL;
+		}		
+	}
+}
+
+void fusion(mem_free_block_t *fb){
+	mem_free_block_t *  parent =  trouve_parent(fb);
+	if( trouve_parent(fb) == NULL)
+		return NULL;
+	if( calc_add_fb (parent) == fb){
+		parent->next = fb->next;
+		parent->size = parent->size + calc_fb(fb);
+	}
+	mem_free_block_t * child = calcul_add_fb(fb);
+	if(fb->next == child){
+		fb->next = child->next;
+		fb->size = fb->size + calc_fb(child);
+	}
+}
+
 
 /**
  * Initialize the memory allocator.
