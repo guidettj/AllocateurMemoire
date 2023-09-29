@@ -24,3 +24,7 @@ size_t mem_space_get_size()
 {
     return MEMORY_SIZE;
 }
+
+void *mem_space_get_last_addr(){
+    return memory + MEMORY_SIZE;
+}

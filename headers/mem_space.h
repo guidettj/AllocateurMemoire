@@ -20,5 +20,6 @@
 void *mem_space_get_addr(void);
 /** Retourne la taille de l'espace mémoire à utilier dans l'allocateur. **/
 size_t mem_space_get_size(void);
-
+/** Retourne la derniere adresse accessible **/ 
+void *mem_space_get_last_addr();
 #endif //MEM_SPACE_H

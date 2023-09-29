@@ -9,15 +9,12 @@
 #include "mem_os.h"
 #include <assert.h>
 
-//-------------------------------------------------------------
-// mem_init
-//-------------------------------------------------------------
-//struct tete * tœete; Pas le droit
-/**
- * Initialize the memory allocator.
- * If already init it will re-init.
-**/
 
+/* ---------------------------------------------
+ * Fonctions de calcul
+ * Retournent la taille memoire occuppee 
+ * taille de structure + memoire reservee
+ */
 size_t calc_fb(mem_free_block_t* add){
 	return sizeof(mem_free_block_t) + add->size;
 }
@@ -25,7 +22,14 @@ size_t calc_fb(mem_free_block_t* add){
 size_t calc_bb(struct bb * add){
 	return sizeof(struct bb) + add->size;
 }
+// ---------------------------------------------
 
+
+/* ---------------------------------------------
+ * Fonctions de calcul d'adresse
+ * Retournent l'adresse memoire juste apres la structure
+ * adresse + taille de structure + memoire reservee
+ */
 struct bb *calc_add_bb(struct bb * add){
 	return (struct bb *) ((char *)add + sizeof(struct bb) + add->size);
 }
@@ -33,7 +37,16 @@ struct bb *calc_add_bb(struct bb * add){
 mem_free_block_t *calc_add_fb(mem_free_block_t * add){
 	return (mem_free_block_t *) ((char *)add + sizeof(mem_free_block_t) + add->size);
 }
+// ---------------------------------------------
 
+
+
+/* ---------------------------------------------
+ * Fonction *trouve_parent()
+ * Prend en parametre un *fb dont on cherche le parent
+ * Retourne le parent de fb 
+ * Si fb est orphelin renvoie NULL
+ */
 mem_free_block_t *_trouve_parent(mem_free_block_t * b, mem_free_block_t * b_cherche){
 	if(b_cherche == NULL || b == NULL)
 		return NULL;
@@ -48,7 +61,15 @@ mem_free_block_t *trouve_parent(mem_free_block_t * fb){
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 	return _trouve_parent(tete->next, fb);
 }
+// ---------------------------------------------
 
+
+/* ---------------------------------------------
+ * Fonction *fb_before_adresse
+ * Prend en parametre un *fb et une adresse `adr`
+ * Renvoie le dernier fb avant adr s'il existe
+ * NULL sinon
+ */
 mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
     if(fb->next == NULL)
         return NULL;
@@ -58,10 +79,17 @@ mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
 
     return fb_before_add(fb->next, add);
 }
+// ---------------------------------------------
 
-// nom de fonc doit etre tirer d'un tas de chose
-// renvoie l'adresse 
+
+/* ---------------------------------------------
+ * Fonction *pick_bb
+ * 
+ * 
+ * 
+ */
 struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
+    // NULL si start est sur / depasse le prochain fb
     if(start == NULL || add == NULL || (void *)start >= next_fb)
         return NULL;
 
@@ -70,13 +98,21 @@ struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
     
     return pick_bb(calc_add_bb(start), add, next_fb);
 }
+// ---------------------------------------------
 
 
+/* ---------------------------------------------
+ * Fonction *find_bb
+ * 
+ * 
+ * 
+ */
 struct bb *find_bb(void * add){
     struct tete * tete = (struct tete *) mem_space_get_addr();
     mem_free_block_t * fb = fb_before_add(tete->next, add);
     return pick_bb((struct bb *) calc_add_fb(fb), add, (void *) (fb->next));
 }
+// ---------------------------------------------
 
 
 void fusion_(){
@@ -110,6 +146,9 @@ void fusion(mem_free_block_t *fb){
 	}
 }
 
+//-------------------------------------------------------------
+// mem_init
+//-------------------------------------------------------------
 
 /**
  * Initialize the memory allocator.
@@ -225,11 +264,11 @@ void mem_free(void *zone) {
 //----------------------------------------------------------------
 
 // bb *pick_bb(bb * start, void * add, void * next_fb){
-//     if(this == NULL || add == NULL || (void *)start >= next_fb)
-//         return NULL;
+    // if(this == NULL || add == NULL || (void *)start >= next_fb)
+    //     return NULL;
 
-//     if((void *)start == add)
-//         return start;
+    // if((void *)start == add)
+    //     return start;
     
 //     return (start + sizeof(struct bb) + start->size, add, next_fb);
 // }
@@ -241,18 +280,36 @@ void mem_free(void *zone) {
 //     return pick_bb((struct bb *) (fb + fb->size + sizeof(mem_free_block_t)), add, (void *) (fb->next);)
 // }
 
-void _mem_show(void (*print)(void *, size_t, int free), mem_free_block_t * block) {
-	if (block == NULL)
+void _mem_show_bb(void (*print)(void *, size_t, int free), struct bb * bb, void * limite){
+    if((void *)bb == limite)
+        return;
+
+    if (bb == NULL)
+		return;
+    
+    print((void *) bb, bb->size, 1);
+
+    return(print, calc_add_bb(bb), limite);
+}
+
+void _mem_show_fb(void (*print)(void *, size_t, int free), mem_free_block_t * fb) {
+	if (fb == NULL)
 		return;
 
-	print(block, block->size, 1);
-	return _mem_show(print, block->next);
+	print((void *) fb, fb->size, 0);
+    
+    void * add_next = calc_add_fb(fb);
+    if (add_next < (void *)fb->next)
+        return _mem_show_bb(print, (struct bb *) add_next, (void *) fb->next);
+
+    return _mem_show_fb(print, fb->next);
 }
 
 void mem_show(void (*print)(void *, size_t, int free)) {
-		// struct tete * tete = (struct tete *) mem_space_get_addr();
-		// block = mem_space_get_addr() + sizeof(struct tete) + sizeof(mem_free_block_t);
-		// _mem_show(print, block);
+		struct tete * tete = (struct tete *) mem_space_get_addr();
+		mem_free_block_t fb = tete->next;
+        // le premier bloc est forcement un fb, la tete est suivie du bloc fictif
+		_mem_show_fb(print, fb);
 }
 
 //-------------------------------------------------------------
