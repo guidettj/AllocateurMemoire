@@ -142,10 +142,14 @@ void *mem_alloc(size_t size) {
 //-------------------------------------------------------------
 size_t mem_get_size(void * zone)
 {
-    //TODO: implement
 	//chercher dans fb et si ca yest pas caster en bb et on pourra recup la taille
-	assert(! "NOT IMPLEMENTED !");
-    return 0;
+	struct bb* adrStruct = find_bb(zone);
+	if(adrStruct == NULL){
+		return NULL;
+	}
+	else{
+	return adrStruct->size()
+	}
 }
 
 //-------------------------------------------------------------
