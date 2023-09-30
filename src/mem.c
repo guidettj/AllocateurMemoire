@@ -8,6 +8,19 @@
 #include "mem_space.h"
 #include "mem_os.h"
 #include <assert.h>
+#include <stdint.h>
+
+
+/* ---------------------------------------------
+ * Fonctions out_of_memory
+ * Dis si l'adresse ne depasse pas la memoire
+ */
+int8_t out_of_memory(void * add){
+// add = 2
+// 1 <= 2 && 2 < 3 correct statement
+// 1 > 2 || 2 >= 3 !correct
+	return  mem_space_get_addr() > add || add >= mem_space_get_last_addr() ;
+}
 
 
 /* ---------------------------------------------
@@ -209,26 +222,27 @@ void *mem_alloc(size_t size) {
 	if (p_libre == NULL)
 		return NULL;
 
-	struct bb * busy = (struct bb *) libre;
-	busy->size = size;
-	
 	// Aura t on de la place pour mettre un mem_free_block_t 
 	// si on attribue `size` memoire a busy ?
-	int offset = libre->size - size;
-	if(offset <= 0){
+	int s_libre = libre->size;
+	int offset = s_libre - size;
+
+	struct bb * busy = (struct bb *) libre;
+	busy->size = size;
+
+	if(s_libre + (sizeof(mem_free_block_t) - sizeof(struct bb)) <= size){
 		// si <0 alors pas de place pour un struct fb
 		// on va attribuer la taille a busy
 		busy->size -= offset;
 		p_libre->next = libre->next;
 		
-		libre->size = 0;
 		libre = NULL;
 	}
 	else{
-		libre->size -= size;
-		libre = (mem_free_block_t * ) ((char *)busy + size + sizeof(struct bb));
+		libre = (mem_free_block_t * ) calc_add_bb(busy);
+		libre->size = s_libre - size;
 		p_libre->next = libre;
-	}
+	}	
 
 	return busy;
 }
@@ -263,53 +277,35 @@ void mem_free(void *zone) {
 // _mem_show fonction bis permettant la recursivite sur les blocks
 //----------------------------------------------------------------
 
-// bb *pick_bb(bb * start, void * add, void * next_fb){
-    // if(this == NULL || add == NULL || (void *)start >= next_fb)
-    //     return NULL;
-
-    // if((void *)start == add)
-    //     return start;
-    
-//     return (start + sizeof(struct bb) + start->size, add, next_fb);
-// }
-
-
-// bb *find_bb(void * add){
-//     struct tete * tete = (struct tete *) mem_space_get_addr();
-//     mem_free_block_t fb = fb_before_add(tete->next, add);
-//     return pick_bb((struct bb *) (fb + fb->size + sizeof(mem_free_block_t)), add, (void *) (fb->next);)
-// }
-
 void _mem_show_bb(void (*print)(void *, size_t, int free), struct bb * bb, void * limite){
-    if((void *)bb == limite)
+	if((void *)bb >= limite || (void *)bb >= mem_space_get_last_addr())
         return;
 
     if (bb == NULL)
 		return;
     
-    print((void *) bb, bb->size, 1);
+    print((void *) bb, bb->size, 0);
 
-    return(print, calc_add_bb(bb), limite);
+    return _mem_show_bb(print, calc_add_bb(bb), limite);
 }
 
 void _mem_show_fb(void (*print)(void *, size_t, int free), mem_free_block_t * fb) {
-	if (fb == NULL)
+	if (fb == NULL || (void *)fb >= mem_space_get_last_addr())
 		return;
 
-	print((void *) fb, fb->size, 0);
+	print((void *) fb, fb->size, 1);
     
     void * add_next = calc_add_fb(fb);
     if (add_next < (void *)fb->next)
-        return _mem_show_bb(print, (struct bb *) add_next, (void *) fb->next);
+        _mem_show_bb(print, (struct bb *) add_next, (void *) fb->next);
 
     return _mem_show_fb(print, fb->next);
 }
 
 void mem_show(void (*print)(void *, size_t, int free)) {
 		struct tete * tete = (struct tete *) mem_space_get_addr();
-		mem_free_block_t fb = tete->next;
         // le premier bloc est forcement un fb, la tete est suivie du bloc fictif
-		_mem_show_fb(print, fb);
+		_mem_show_fb(print, tete->next);
 }
 
 //-------------------------------------------------------------
@@ -325,11 +321,10 @@ void mem_set_fit_handler(mem_fit_function_t *mff) {
 // Stratégies d'allocation
 //-------------------------------------------------------------
 mem_free_block_t *mem_first_fit(mem_free_block_t *first_free_block, size_t wanted_size) {
-    //TODO: implement
-	while (first_free_block!=NULL){
-		if(first_free_block->size >= wanted_size){
+	while (first_free_block != NULL){
+		if(first_free_block->size >= wanted_size)
 			return first_free_block;
-		}
+		
 		first_free_block = first_free_block->next;
 	}
 	return NULL;

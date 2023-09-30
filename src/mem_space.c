@@ -10,7 +10,7 @@
 // si vous n'utilisez pas l'option -DMEMORY_SIZE=...
 // lors de la compilation
 #if !defined(MEMORY_SIZE)
-#define MEMORY_SIZE 300
+#define MEMORY_SIZE 1000
 #endif
 
 static char memory[MEMORY_SIZE];
@@ -26,5 +26,5 @@ size_t mem_space_get_size()
 }
 
 void *mem_space_get_last_addr(){
-    return memory + MEMORY_SIZE;
+    return (char *)memory + MEMORY_SIZE;
 }
