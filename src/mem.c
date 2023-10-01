@@ -95,12 +95,25 @@ mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
 // ---------------------------------------------
 
 
-/* ---------------------------------------------
+/**---------------------------------------------
  * Fonction *pick_bb
+ * Prend 3 parametres : 
+ * Start  : bb a l'adresse duquel on se trouve
+ * add    : adresse a laquelle un bb est cense etre
+ * next_fb: fb a la suite le(s) block(s) de bb
+ *
+ * Exemple : 
+ * ----------------------------------------------
+ * |0  bb1  |4   bb2   |16    bb3    |30 next_fb|
+ * ----------------------------------------------
+ * pick_bb(bb1, 16, next_fb) -> bb3;
+ * pick_bb(bb1, 4 , next_fb) -> bb1;
  * 
+ * pick_bb(bb1, 15, next_fb) -> NULL;
+ * pick_bb(bb1, 17, next_fb) -> NULL;
  * 
- * 
- */
+ * pick_bb(bb1, 30, next_fb) -> NULL;
+**/
 struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
     // NULL si start est sur / depasse le prochain fb
     if(start == NULL || add == NULL || (void *)start >= next_fb)
@@ -116,9 +129,9 @@ struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
 
 /* ---------------------------------------------
  * Fonction *find_bb
- * 
- * 
- * 
+ * Prend en parametre une adresse `adr`
+ * Si adr est le debut d'un block renvoie ce bloc
+ * NULL sinon
  */
 struct bb *find_bb(void * add){
     struct tete * tete = (struct tete *) mem_space_get_addr();
@@ -267,7 +280,8 @@ size_t mem_get_size(void * zone)
  * Free an allocaetd bloc.
 **/
 void mem_free(void *zone) {
-    //TODO: implement
+    
+	//TODO: implement
 	assert(! "NOT IMPLEMENTED !");
 }
 
