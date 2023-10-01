@@ -267,8 +267,22 @@ size_t mem_get_size(void * zone)
  * Free an allocaetd bloc.
 **/
 void mem_free(void *zone) {
-    //TODO: implement
-	assert(! "NOT IMPLEMENTED !");
+	struct tete* tete = (struct tete*)mem_space_get_addr();
+	mem_free_block_t * fb1 = tete->next;
+	
+    //chercher si l'adresse de la structure est bien un bb
+	mem_free_block_t* fb = (mem_free_block_t*) (find_bb(zone - sizeof(struct bb)));
+	fb->size = mem_get_size(zone);
+
+	while(fb1 != NULL){
+		if(fb1->next > fb){
+			fb->next = fb1->next;
+			fb1->next = fb;
+		}
+	}
+
+	fusion(zone);
+
 }
 
 //----------------------------------------------------------------
