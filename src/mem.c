@@ -12,6 +12,17 @@
 
 
 /* ---------------------------------------------
+ * Fonctions adr_fict
+ * Renvoie l'adresse du bloc fictif
+ */
+mem_free_block_t * adr_fict(){
+	struct tete * tete = (struct tete *) mem_space_get_addr();
+	return tete->next;
+}
+// ---------------------------------------------
+
+
+/* ---------------------------------------------
  * Fonctions out_of_memory
  * Dis si l'adresse ne depasse pas la memoire
  */
@@ -121,7 +132,7 @@ struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
 
     if((void *)start == add)
         return start;
-    
+	
     return pick_bb(calc_add_bb(start), add, next_fb);
 }
 // ---------------------------------------------
@@ -156,19 +167,21 @@ void fusion_(){
 }
 
 void fusion(mem_free_block_t *fb){
-	mem_free_block_t *  parent =  trouve_parent(fb);
-	if( trouve_parent(fb) == NULL)
-		return ;
+	mem_free_block_t * parent = trouve_parent(fb);
+	mem_free_block_t * child = fb->next;
 
-	if( calc_add_fb (parent) == fb){
+	if(calc_add_fb(parent) == fb && parent != adr_fict()){
+		parent->size += calc_fb(fb);
 		parent->next = fb->next;
-		parent->size = parent->size + calc_fb(fb);
 	}
 
-	mem_free_block_t * child = calc_add_fb(fb);
-	if(fb->next == child){
+	if(child == NULL)
+		return ;
+
+	if((mem_free_block_t *) calc_add_bb((struct bb *) fb) == child){
+		fb->size += calc_fb(child) - sizeof(struct bb);
 		fb->next = child->next;
-		fb->size = fb->size + calc_fb(child);
+		child = NULL;
 	}
 }
 
@@ -253,7 +266,7 @@ void *mem_alloc(size_t size) {
 	}
 	else{
 		libre = (mem_free_block_t * ) calc_add_bb(busy);
-		libre->size = s_libre - size;
+		libre->size = s_libre - size - sizeof(struct bb);
 		p_libre->next = libre;
 	}	
 
@@ -280,17 +293,23 @@ size_t mem_get_size(void * zone)
  * Free an allocaetd bloc.
 **/
 void mem_free(void *zone) {
-	struct tete* tete = (struct tete*)mem_space_get_addr();
-	mem_free_block_t * fb_parent = bf_before_add(tete->next, zone);
+	struct bb * bb = find_bb(zone);
+	if (bb == NULL)
+		return;
 
+	struct tete* tete = (struct tete*)mem_space_get_addr();
+	mem_free_block_t * fb_parent = fb_before_add(tete->next, zone);
+	
     //chercher si l'adresse de la structure est bien un bb
-	mem_free_block_t* fb = (mem_free_block_t*) (find_bb(zone - sizeof(struct bb)));
-	fb->size = mem_get_size(zone);
+	size_t bb_size = mem_get_size(zone);
+	mem_free_block_t* fb = (mem_free_block_t*) (bb);
+	
+	fb->size = bb_size;
 
 	fb->next = fb_parent->next;
 	fb_parent->next = fb;
 
-	fusion(zone);
+	fusion(fb);
 }
 
 //----------------------------------------------------------------
