@@ -143,7 +143,8 @@ mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
 **/
 struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
     // NULL si start est sur / depasse le prochain fb
-    if(start == NULL || add == NULL || (void *)start >= next_fb || out_of_memory(add))
+	printf("add = %p\n", add);
+    if(add == NULL || (void *)start >= next_fb)
         return NULL;
 
     if((void *)start == add)
@@ -161,6 +162,11 @@ struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
  * NULL sinon
  */
 struct bb *find_bb(void * add){
+	if (out_of_memory(add) || add == NULL){
+		printf("Out of memory or NULL! \n");
+		return NULL;
+	}
+
     struct tete * tete = (struct tete *) mem_space_get_addr();
     mem_free_block_t * fb = fb_before_add(tete->next, add);
     return pick_bb((struct bb *) calc_add_fb(fb), add, (void *) (fb->next));
@@ -179,9 +185,13 @@ void fusion(mem_free_block_t *fb){
 
 	if(child == NULL)
 		return ;
+	printf("@child = %p\n", child);
+	printf("@next to fb = %p\n", calc_add_bb((struct bb *) fb));
+	printf("fb->size = %ld\n", fb->size);
+	
 
-	if((mem_free_block_t *) calc_add_bb((struct bb *) fb) == child){
-		fb->size += calc_fb(child) - sizeof(struct bb);
+	if((mem_free_block_t *) calc_add_fb(fb) == child){
+		fb->size += calc_fb(child);
 		fb->next = child->next;
 		child = NULL;
 	}
@@ -210,24 +220,21 @@ void mem_init() {
 	bfict->next = mem1;
 
 	mem1->size = mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete);
-	// printf("%p", mem_space_get_addr())
-	// printf("sizeof(mem_free_block_t) : %ld\n", sizeof(mem_free_block_t));
-	// printf("sizeof(struct tete) : %ld\n\n", sizeof(struct tete));
+	printf("sizeof(mem_free_block_t) : %ld\n", sizeof(mem_free_block_t));
+	printf("sizeof(struct tete) : %ld\n\n", sizeof(struct tete));
 
-	// printf("Memoire totale : %ld\n", mem_space_get_size());
-	// printf("Memoire debut  :%ld\n\n", mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete));
+	printf("Memoire totale : %ld\n", mem_space_get_size());
+	printf("Memoire debut  :%ld\n\n", mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete));
 
-	// printf("Adresse mem_d : %p\n", mem_space_get_addr());
+	printf("Adresse mem_d : %p\n", mem_space_get_addr());
 
-	// printf("Adresse Tete  : %p\n", tete);
-	// printf("Adresse bfict : %p\n", bfict);
-	// printf("Adresse mem1  : %p\n\n", mem1);
+	printf("Adresse Tete  : %p\n", tete);
+	printf("Adresse bfict : %p\n", bfict);
+	printf("Adresse mem1  : %p\n\n", mem1);
 
-	// printf("Adresse parent mem1 : %p\n", trouve_parent(mem1));
+	printf("Adresse parent mem1 : %p\n", trouve_parent(mem1));
 
-	// printf("Adresse mem1  : %p\n\n", mem1);
-
-	
+	printf("Adresse mem1  : %p\n\n", mem1);
 
 	mem1->next = NULL;
 }
@@ -241,7 +248,7 @@ void mem_init() {
 void *mem_alloc(size_t size) {
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 
-	mem_free_block_t * libre = (tete->fit)(tete->next, size);
+	mem_free_block_t * libre = (tete->fit)(tete->next, size + sizeof(struct bb));
 	// pas d'emplacement libre de taille `size` 
 	if (libre == NULL)
 		return NULL;
@@ -259,7 +266,7 @@ void *mem_alloc(size_t size) {
 		// si <0 alors pas de place pour un struct fb
 		// on va attribuer la taille a busy
 		
-		busy->size = calc(fb) - (sizeof(mem_free_block_t) - sizeof(struct bb));
+		busy->size = calc_fb(libre) - (sizeof(mem_free_block_t) - sizeof(struct bb));
 
 		p_libre->next = libre->next;
 		libre = NULL;
@@ -268,7 +275,12 @@ void *mem_alloc(size_t size) {
 		libre = (mem_free_block_t * ) calc_add_bb(busy);
 		libre->size = size_init - calc_bb(busy);
 		p_libre->next = libre;
-	}	
+	}
+
+	if(out_of_memory(p_libre->next + sizeof(mem_free_block_t))){
+		printf("aaa\n");
+		p_libre->next = NULL;
+	}
 
 	return busy;
 }
@@ -293,19 +305,24 @@ size_t mem_get_size(void * zone)
  * Free an allocaetd bloc.
 **/
 void mem_free(void *zone) {
+	
 	struct bb * bb = find_bb(zone);
+	printf("zone = %p\n", zone);
 	if (bb == NULL)
 		return;
 	
 	struct tete* tete = (struct tete*)mem_space_get_addr();
 	mem_free_block_t * fb_parent = fb_before_add(tete->next, zone);
 	
+	printf("2\n");
     //chercher si l'adresse de la structure est bien un bb
 	size_t bb_size = mem_get_size(zone);
 	// printf("bb_size")
 	mem_free_block_t* fb = (mem_free_block_t*) (bb);
+	printf("3\n");
 	
 	fb->size = bb_size - (sizeof(mem_free_block_t) - sizeof(struct bb)); 
+	printf("4\n");
 
 	fb->next = fb_parent->next;
 	fb_parent->next = fb;
@@ -320,14 +337,14 @@ void mem_free(void *zone) {
 //----------------------------------------------------------------
 
 void _mem_show_bb(void (*print)(void *, size_t, int free), struct bb * bb, void * limite){
-	if((void *)bb >= limite || (void *)bb >= mem_space_get_last_addr())
+	if((void *)bb >= limite || (void *)bb >= mem_space_get_last_addr() || bb == NULL)
         return;
 
-    if (bb == NULL)
-		return;
-    
     print((void *) bb, bb->size, 0);
 
+	if(limite == mem_space_get_last_addr())
+		return;
+	
     return _mem_show_bb(print, calc_add_bb(bb), limite);
 }
 
@@ -340,6 +357,9 @@ void _mem_show_fb(void (*print)(void *, size_t, int free), mem_free_block_t * fb
     void * add_next = calc_add_fb(fb);
     if (add_next < (void *)fb->next)
         _mem_show_bb(print, (struct bb *) add_next, (void *) fb->next);
+
+    if (fb->next == NULL)
+        _mem_show_bb(print, (struct bb *) add_next, (void *) mem_space_get_last_addr());
 
     return _mem_show_fb(print, fb->next);
 }
@@ -364,7 +384,7 @@ void mem_set_fit_handler(mem_fit_function_t *mff) {
 //-------------------------------------------------------------
 mem_free_block_t *mem_first_fit(mem_free_block_t *first_free_block, size_t wanted_size) {
 	while (first_free_block != NULL){
-		if(first_free_block->size >= wanted_size)
+		if(calc_fb(first_free_block) >= wanted_size)
 			return first_free_block;
 		
 		first_free_block = first_free_block->next;
@@ -377,9 +397,9 @@ mem_free_block_t *mem_best_fit(mem_free_block_t *first_free_block, size_t wanted
 	size_t diffTaille = mem_space_get_size();
 
 	while(first_free_block != NULL){
-		if(first_free_block->size > wanted_size){
-			if(diffTaille > first_free_block->size - wanted_size){
-				diffTaille = first_free_block->size - wanted_size;
+		if(calc_fb(first_free_block) > wanted_size){
+			if(diffTaille > calc_fb(first_free_block) - wanted_size){
+				diffTaille = calc_fb(first_free_block) - wanted_size;
 				adresse = first_free_block;
 			}
 		}
@@ -395,9 +415,9 @@ mem_free_block_t *mem_worst_fit(mem_free_block_t *first_free_block, size_t wante
 	size_t diffTaille = 0;
 
 	while(first_free_block != NULL){
-		if(first_free_block->size > wanted_size){
-			if(diffTaille < first_free_block->size - wanted_size){
-				diffTaille = first_free_block->size - wanted_size;
+		if(calc_fb(first_free_block) > wanted_size){
+			if(diffTaille < calc_fb(first_free_block) - wanted_size){
+				diffTaille = calc_fb(first_free_block) - wanted_size;
 				adresse = first_free_block;
 			}
 		}
