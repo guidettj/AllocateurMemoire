@@ -13,20 +13,6 @@
 /* -----------------------------------------------*/
 
 
-typedef struct mem_free_block_s{
-    size_t size;
-    struct mem_free_block_s *next;
-}mem_free_block_t;
-typedef mem_free_block_t *(mem_fit_function_t)(mem_free_block_t *, size_t);
-
-struct bb{
-    size_t size;
-};
-
-struct tete{
-    mem_free_block_t *next;
-    mem_fit_function_t *fit;
-};
 
 void *mem_alloc(size_t);
 

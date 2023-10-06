@@ -11,6 +11,22 @@
 #include <stdint.h>
 
 
+typedef struct mem_free_block_s{
+    size_t size;
+    struct mem_free_block_s *next;
+}mem_free_block_t;
+typedef mem_free_block_t *(mem_fit_function_t)(mem_free_block_t *, size_t);
+
+struct bb{
+    size_t size;
+};
+
+struct tete{
+    mem_free_block_t *next;
+    mem_fit_function_t *fit;
+};
+
+
 /* ---------------------------------------------
  * Fonctions adr_fict
  * Renvoie l'adresse du bloc fictif
@@ -72,7 +88,7 @@ mem_free_block_t *calc_add_fb(mem_free_block_t * add){
  * Si fb est orphelin renvoie NULL
  */
 mem_free_block_t *_trouve_parent(mem_free_block_t * b, mem_free_block_t * b_cherche){
-	if(b_cherche == NULL || b == NULL)
+	if(b_cherche == NULL || b == NULL || out_of_memory(b_cherche)) 
 		return NULL;
 
 	if(b->next == b_cherche)
@@ -95,7 +111,7 @@ mem_free_block_t *trouve_parent(mem_free_block_t * fb){
  * NULL sinon
  */
 mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
-    if(fb->next == NULL)
+    if(fb->next == NULL || out_of_memory(add))
         return NULL;
 
     if((void *)fb->next > add)
@@ -127,7 +143,7 @@ mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
 **/
 struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
     // NULL si start est sur / depasse le prochain fb
-    if(start == NULL || add == NULL || (void *)start >= next_fb)
+    if(start == NULL || add == NULL || (void *)start >= next_fb || out_of_memory(add))
         return NULL;
 
     if((void *)start == add)
@@ -151,20 +167,6 @@ struct bb *find_bb(void * add){
 }
 // ---------------------------------------------
 
-
-void fusion_(){
-	struct tete* tete = (struct tete*)mem_space_get_addr();
-	mem_free_block_t * fb1 = tete->next;
-	while(fb1 != NULL){
-		if(calc_add_fb(fb1) == fb1->next ){
-			mem_free_block_t * fb2 = fb1->next;
-			if (fb2->next != NULL)
-				fb1->next = fb2->next;
-			else
-				fb1 = NULL;
-		}		
-	}
-}
 
 void fusion(mem_free_block_t *fb){
 	mem_free_block_t * parent = trouve_parent(fb);
@@ -209,19 +211,19 @@ void mem_init() {
 
 	mem1->size = mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete);
 	// printf("%p", mem_space_get_addr())
-	printf("sizeof(mem_free_block_t) : %ld\n", sizeof(mem_free_block_t));
-	printf("sizeof(struct tete) : %ld\n\n", sizeof(struct tete));
+	// printf("sizeof(mem_free_block_t) : %ld\n", sizeof(mem_free_block_t));
+	// printf("sizeof(struct tete) : %ld\n\n", sizeof(struct tete));
 
-	printf("Memoire totale : %ld\n", mem_space_get_size());
-	printf("Memoire debut  :%ld\n\n", mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete));
+	// printf("Memoire totale : %ld\n", mem_space_get_size());
+	// printf("Memoire debut  :%ld\n\n", mem_space_get_size() - sizeof(mem_free_block_t) * 2 - sizeof(struct tete));
 
-	printf("Adresse mem_d : %p\n", mem_space_get_addr());
+	// printf("Adresse mem_d : %p\n", mem_space_get_addr());
 
-	printf("Adresse Tete  : %p\n", tete);
-	printf("Adresse bfict : %p\n", bfict);
-	printf("Adresse mem1  : %p\n\n", mem1);
+	// printf("Adresse Tete  : %p\n", tete);
+	// printf("Adresse bfict : %p\n", bfict);
+	// printf("Adresse mem1  : %p\n\n", mem1);
 
-	printf("Adresse parent mem1 : %p\n", trouve_parent(mem1));
+	// printf("Adresse parent mem1 : %p\n", trouve_parent(mem1));
 
 	// printf("Adresse mem1  : %p\n\n", mem1);
 
@@ -248,25 +250,23 @@ void *mem_alloc(size_t size) {
 	if (p_libre == NULL)
 		return NULL;
 
-	// Aura t on de la place pour mettre un mem_free_block_t 
-	// si on attribue `size` memoire a busy ?
-	int s_libre = libre->size;
-	int offset = s_libre - size;
+ 	int size_init = libre->size;
 
 	struct bb * busy = (struct bb *) libre;
 	busy->size = size;
 
-	if(s_libre + (sizeof(mem_free_block_t) - sizeof(struct bb)) <= size){
+	if(calc_fb(libre) <= calc_bb(busy)){
 		// si <0 alors pas de place pour un struct fb
 		// on va attribuer la taille a busy
-		busy->size -= offset;
-		p_libre->next = libre->next;
 		
+		busy->size = calc(fb) - (sizeof(mem_free_block_t) - sizeof(struct bb));
+
+		p_libre->next = libre->next;
 		libre = NULL;
 	}
 	else{
 		libre = (mem_free_block_t * ) calc_add_bb(busy);
-		libre->size = s_libre - size - sizeof(struct bb);
+		libre->size = size_init - calc_bb(busy);
 		p_libre->next = libre;
 	}	
 
@@ -296,15 +296,16 @@ void mem_free(void *zone) {
 	struct bb * bb = find_bb(zone);
 	if (bb == NULL)
 		return;
-
+	
 	struct tete* tete = (struct tete*)mem_space_get_addr();
 	mem_free_block_t * fb_parent = fb_before_add(tete->next, zone);
 	
     //chercher si l'adresse de la structure est bien un bb
 	size_t bb_size = mem_get_size(zone);
+	// printf("bb_size")
 	mem_free_block_t* fb = (mem_free_block_t*) (bb);
 	
-	fb->size = bb_size;
+	fb->size = bb_size - (sizeof(mem_free_block_t) - sizeof(struct bb)); 
 
 	fb->next = fb_parent->next;
 	fb_parent->next = fb;
