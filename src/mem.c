@@ -268,15 +268,11 @@ void *mem_alloc(size_t size) {
 	}
 		
 	mem_free_block_t * p_libre = trouve_parent(libre);
-	if (p_libre == NULL){
-		printf("libre = %ld\n", (long) libre);
-		
-		show_parent(libre);
+	if (p_libre == NULL)
 		return NULL;
-	}
 
  	int size_init = libre->size;
-
+	printf("hello\n");
 	struct bb * busy = (struct bb *) libre;
 	busy->size = size;
 
@@ -296,9 +292,8 @@ void *mem_alloc(size_t size) {
 		libre->size = size_init - calc_bb(busy);
 		p_libre->next = libre;
 	}
-	printf("p_libre->next = %ld\n", (long) p_libre->next);
-	printf("last_addr     = %ld\n", (long) mem_space_get_last_addr());
 
+	printf("hello\n");
 	// if(p_libre->next == mem_space_get_last_addr()){
 	// 	p_libre->next = NULL;
 	// }
@@ -326,23 +321,24 @@ size_t mem_get_size(void * zone)
  * Free an allocaetd bloc.
 **/
 void mem_free(void *zone) {
+	printf("\n\n");
 	struct bb * bb = find_bb(zone);
 	if (bb == NULL)
 		return;
 	
-	struct tete* tete = (struct tete*)mem_space_get_addr();
+	struct tete* tete = (struct tete*) mem_space_get_addr();
 	mem_free_block_t * fb_parent = fb_before_add(tete->next, zone);
-	
+ 
     //chercher si l'adresse de la structure est bien un bb
-	size_t bb_size = mem_get_size(zone);
+	size_t bb_size = calc_bb(bb);
 	mem_free_block_t* fb = (mem_free_block_t*) (bb);
 	
-	fb->size = bb_size + sizeof(mem_free_block_t); 
+	fb->size = bb_size;
 
 	fb->next = fb_parent->next;
 	fb_parent->next = fb;
 
-	fusion(fb);
+	// fusion(fb);
 }
 
 //----------------------------------------------------------------
