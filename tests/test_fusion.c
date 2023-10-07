@@ -22,6 +22,7 @@ void *relative_adr(void *adr) {
 void my_free(void **mem) {
     if (*mem != NULL) {
         mem_free(*mem);
+    printf("11\n");
         debug("Freed %p\n", relative_adr(*mem));
         *mem = NULL;
     }
@@ -53,6 +54,7 @@ void *alloc_max(size_t estimate) {
 }
 
 static void alloc5(void **ptr) {
+    // printf("11\n");
     ptr[0] = checked_alloc(MAX_ALLOC);
     ptr[1] = checked_alloc(MAX_ALLOC);
     ptr[2] = checked_alloc(MAX_ALLOC);
@@ -62,6 +64,7 @@ static void alloc5(void **ptr) {
 
 static void free5(void **ptr) {
     for (int i = 0; i < 5; i++) {
+        printf("freed %d\n", i);
         my_free(&ptr[i]);
     }
 }
@@ -80,6 +83,7 @@ int main(int argc, char *argv[]) {
         debug("Fusion avant\n");
         alloc5(ptr);
         my_free(&ptr[2]);
+        printf("1\n");  
         my_free(&ptr[1]);
         ptr[1] = checked_alloc(2 * MAX_ALLOC);
         free5(ptr);

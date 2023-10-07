@@ -130,10 +130,9 @@ void *show_parent(mem_free_block_t * fb){
  * NULL sinon
  */
 mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
-    if(fb->next == NULL || out_of_memory(add))
-        return NULL;
+    if(out_of_memory(add)) return NULL;
 
-    if((void *)fb->next > add)
+	if((void *)fb->next > add || fb->next == NULL)
         return fb;
 
     return fb_before_add(fb->next, add);
@@ -162,11 +161,13 @@ mem_free_block_t *fb_before_add(mem_free_block_t *fb, void * add){
 **/
 struct bb *pick_bb(struct bb * start, void * add, void * next_fb){
     // NULL si start est sur / depasse le prochain fb
-    if(add == NULL || (void *)start >= next_fb)
+    if(add == NULL || (void *)start >= next_fb || (void * )start > mem_space_get_last_addr())
         return NULL;
-
+	
     if((void *)start == add)
         return start;
+	
+// printf("2\n");
 	
     return pick_bb(calc_add_bb(start), add, next_fb);
 }
@@ -187,7 +188,15 @@ struct bb *find_bb(void * add){
 
     struct tete * tete = (struct tete *) mem_space_get_addr();
     mem_free_block_t * fb = fb_before_add(tete->next, add);
-    return pick_bb((struct bb *) calc_add_fb(fb), add, (void *) (fb->next));
+	
+	printf("add = %ld\n", (long) add);
+	printf("fb  = %ld\n", (long) fb);
+	
+	if (fb->next == NULL){
+	printf("11\n");
+	    return pick_bb((struct bb *) calc_add_fb(fb), add, (void *) mem_space_get_last_addr());
+	}
+    return pick_bb((struct bb *) calc_add_fb(fb), add, (void *) fb->next);
 }
 // ---------------------------------------------
 
@@ -324,6 +333,7 @@ size_t mem_get_size(void * zone)
 void mem_free(void *zone) {
 	printf("\n\n");
 	struct bb * bb = find_bb(zone);
+	printf("1\n");
 	if (bb == NULL)
 		return;
 	
@@ -333,13 +343,13 @@ void mem_free(void *zone) {
     //chercher si l'adresse de la structure est bien un bb
 	size_t bb_size = calc_bb(bb);
 	mem_free_block_t* fb = (mem_free_block_t*) (bb);
-	
 	fb->size = bb_size;
 
 	fb->next = fb_parent->next;
 	fb_parent->next = fb;
+	printf("2\n");
 
-	fusion(fb);
+	fusion(fb); 
 }
 
 //----------------------------------------------------------------
