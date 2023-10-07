@@ -199,17 +199,16 @@ void fusion(mem_free_block_t *fb){
 	if(calc_add_fb(parent) == fb && parent != adr_fict()){
 		parent->size += fb->size;
 		parent->next = fb->next;
+		fb = parent;
 	}
 
 	if(child == NULL)
 		return ;
-	printf("@child = %p\n", child);
-	printf("@next to fb = %p\n", calc_add_bb((struct bb *) fb));
 
-	if((mem_free_block_t *) calc_add_fb(fb) == child){
+
+	if(calc_add_fb(fb) == child){
 		fb->size += child->size;
 		fb->next = child->next;
-		child = NULL;
 	}
 }
 
@@ -236,18 +235,18 @@ void mem_init() {
 	bfict->next = mem1;
 
 	mem1->size = mem_space_get_size() - sizeof(mem_free_block_t) - sizeof(struct tete);
-	printf("Memoire totale : %ld\n", mem_space_get_size());
-	printf("Memoire debut  :%ld\n\n", mem_space_get_size() - sizeof(mem_free_block_t) - sizeof(struct tete));
+	// printf("Memoire totale : %ld\n", mem_space_get_size());
+	// printf("Memoire debut  :%ld\n\n", mem_space_get_size() - sizeof(mem_free_block_t) - sizeof(struct tete));
 
-	printf("Adresse mem_d : %p\n", mem_space_get_addr());
+	// printf("Adresse mem_d : %p\n", mem_space_get_addr());
 
-	printf("Adresse Tete  : %p\n", tete);
-	printf("Adresse bfict : %p\n", bfict);
-	printf("Adresse mem1  : %p\n\n", mem1);
+	// printf("Adresse Tete  : %p\n", tete);
+	// printf("Adresse bfict : %p\n", bfict);
+	// printf("Adresse mem1  : %p\n\n", mem1);
 
-	printf("Adresse parent mem1 : %p\n", trouve_parent(mem1));
+	// printf("Adresse parent mem1 : %p\n", trouve_parent(mem1));
 
-	printf("Adresse mem1  : %p\n\n", mem1);
+	// printf("Adresse mem1  : %p\n\n", mem1);
 
 	mem1->next = NULL;
 }
@@ -259,6 +258,10 @@ void mem_init() {
  * Allocate a bloc of the given size.
 **/
 void *mem_alloc(size_t size) {
+	if (size < 8){
+		printf("-> Taille trop petite (%ld), taille minimale autorisee : 8o\n;", size);
+		return NULL;
+	}
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 
 	mem_free_block_t * libre = (tete->fit)(tete->next, size + sizeof(struct bb));
@@ -271,29 +274,27 @@ void *mem_alloc(size_t size) {
 	if (p_libre == NULL)
 		return NULL;
 
+	mem_free_block_t * next = libre->next;
  	int size_init = libre->size;
-	printf("hello\n");
 	struct bb * busy = (struct bb *) libre;
 	busy->size = size;
 
 	// on ne teste pas si bb > (struct fb + size_init), 
 	// c'est deja fait dans les strategies
-	if(size_init <= calc_bb(busy)){
+	if(size_init - sizeof(mem_free_block_t) <= calc_bb(busy)){
 		// si <0 alors pas de place pour un struct fb
 		// on va attribuer la taille a busy
-		
 		busy->size = size_init - sizeof(struct bb);
-
-		p_libre->next = libre->next;
-		libre = NULL;
+		p_libre->next = next;
 	}
 	else{
 		libre = (mem_free_block_t * ) calc_add_bb(busy);
 		libre->size = size_init - calc_bb(busy);
+		libre->next = next;
+		
 		p_libre->next = libre;
 	}
 
-	printf("hello\n");
 	// if(p_libre->next == mem_space_get_last_addr()){
 	// 	p_libre->next = NULL;
 	// }
@@ -338,7 +339,7 @@ void mem_free(void *zone) {
 	fb->next = fb_parent->next;
 	fb_parent->next = fb;
 
-	// fusion(fb);
+	fusion(fb);
 }
 
 //----------------------------------------------------------------
