@@ -287,7 +287,7 @@ void *mem_alloc(size_t size) {
 		p_libre->next = libre;
 	}
 
-	return busy;
+	return busy + 1;
 }
 
 //-------------------------------------------------------------
@@ -310,6 +310,7 @@ size_t mem_get_size(void * zone)
  * Free an allocaetd bloc.
 **/
 void mem_free(void *zone) {
+	zone -= sizeof(struct bb);
 	struct bb * bb = find_bb(zone);
 	if (bb == NULL)
 		return;
