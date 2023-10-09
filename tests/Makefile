@@ -17,7 +17,8 @@ LDFLAGS=
 
 ###############################################################################
 # targets
-TESTS=test_init test_fusion test_fusion_bzero test_frag test_base test_base_bzero test_cheese test_cheese_bzero
+TESTS=test_init test_fusion test_fusion_bzero test_frag test_base test_base_bzero test_cheese test_cheese_bzero test_strat test_calc
+
 PROGRAMS=$(TESTS)
 LIB_DIR=../libs
 
@@ -45,4 +46,4 @@ distclean: clean
 
 ###############################################################################
 #include deps
-%.c: ../headers/mem_os.h ../headers/mem_space.h ../headers/mem.h
+%.c: ../headers/mem_os.h ../headers/mem_space.h ../headers/mem.h ../src/mem.c

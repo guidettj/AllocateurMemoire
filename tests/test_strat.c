@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TAILLE 50
 
 int a_size, b_size, c_size, d_size;
 
@@ -23,35 +22,21 @@ void set_values(int va, int vb, int vc, int vd){
 
 int main() {
     mem_init();
-    void * p[TAILLE];
-
-    for (int i = 0; i < TAILLE; i++) {
-        p[i]= mem_alloc(10);
-        assert(p[i] != NULL);
-    }
-
-    // On regarde si les blocks alloues sont bien colles l'un a l'autre
-    for (int i = 1; i < TAILLE; i++) {
-        assert(p[i] == (char *)p[i-1]+ sizeof(size_t) + 10);
-    }
-
-    printf("mem_first_fit OK !\n");
-
-    // reinitialisation de memoire
-    mem_init();
-    mem_set_fit_handler(mem_best_fit);
-    set_values(20, mem_space_get_size()/2, 200, 10);
+    set_values(20, 18, 200, 18);
 
     void * a = mem_alloc(a_size);
     void * b = mem_alloc(b_size);
     void * c = mem_alloc(c_size);
-    
-    mem_free(b);
-    // il y a un gros bloc dispo apres a et un plus petit bloc dispo apres c
     void * d = mem_alloc(d_size);
-    // best_fit doit choisir le bloc plus petit
-    assert((char *)d == (char *)c + c_size + sizeof(size_t));
-    
+    mem_alloc(18);
+    mem_free(b);
+    mem_free(d);
+    void * e = mem_alloc(18);
+    assert(e == b);
+ 
+    printf("mem_first_fit OK !\n");
+
+
     mem_init();
     mem_set_fit_handler(mem_best_fit);
     set_values(18, 19, 20, 17);
@@ -69,7 +54,6 @@ int main() {
     else{
         assert(d == a); //debut
     }
-    //assert((char *)d == (char *)b + b_size + sizeof(size_t));
     printf("mem_best_fit OK !\n");
 
     mem_init();

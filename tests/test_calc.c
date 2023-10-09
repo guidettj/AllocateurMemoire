@@ -11,29 +11,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int a_size, b_size, c_size, d_size;
-
-void set_values(int va, int vb, int vc, int vd){
-    a_size = va;
-    b_size = vb;
-    c_size = vc;
-    d_size = vd;
-}
 
 int main() {
     mem_init();
-
-    set_values(20,25,26,40);
+    size_t a_size=20, b_size=25, c_size=26, d_size=40;
     void * a = mem_alloc(a_size);
     void * b = mem_alloc(b_size);
     void * c = mem_alloc(c_size);
     void * d = mem_alloc(d_size);
+    mem_alloc(45);
+    void * f = mem_alloc(10);
 
     mem_free(b);
-    printf("%zu/n",calc_bb(a));
-    printf("%zu/n",(size_t)a_size);
-    assert(calc_bb(a)==(size_t)a_size);
-    assert(a_size == calc_fb(a)-16);
+
+    assert(calc_bb(a)==(size_t)a_size+8);
+    assert(a_size == calc_fb(a));
     
     printf("calc_bb et calc_fb OK !\n");
 
@@ -43,15 +35,21 @@ int main() {
     printf("calc_add_bb et calc_add_fb OK !\n");
 
     mem_free(d);
-    assert(b==fb_before_add(a,d));
+   // printf("Valeur de size_t : %zu\n",fb_before_add(a,d));
+    mem_free(f);
+
+    assert(f==fb_before_add(adr_fict(),f+1));
     printf("fb_before_add OK !\n");
 
     assert(a == find_bb(a));
     assert(NULL == find_bb(b));
 
     printf("find_bb OK !\n");
+  
+    assert(b == trouve_parent(d));
+    printf("trouve_parents OK !\n");
 
-    printf("Tous les tests pour les calculs ont réussis !\n");
+    printf("Tous les tests ont réussis !\n");
 
     return 0;
 }
