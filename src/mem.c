@@ -433,27 +433,37 @@ void *mem_realloc(void *p, size_t size){
 	if(p == NULL){
 		return mem_alloc(size);
 	}
+
 	if(size == 0){
 		mem_free(p);
 		return NULL;
 	}
+
+	if(size < sizeof(struct bb))
+		size = sizeof(struct bb);
+
 	struct bb * bb = find_bb(p-sizeof(struct bb));
 	if(bb == NULL){
 		return NULL;
 	}
+	
 	struct tete* tete = (struct tete*) mem_space_get_addr();
 	mem_free_block_t * fb = tete->next;
 
 	mem_free_block_t * fb_parent = fb_before_add(fb,bb);
-	if(size <= bb->size){
+	if(size == bb->size){
+		return bb + 1;
+	}
+	else if(size < bb->size){
 		bb->size=size;
+
 		fb_parent->next -= (size-bb->size);
 		(fb_parent->next)->size+=(bb->size-size);
-		return bb;
+		return bb + 1;
 	}
 	else{
 		void *a = mem_alloc(size);
-		memcpy(a,p,bb->size-sizeof(size_t));
+		memcpy(a, p, bb->size);
 		mem_free(p);
 		return a;
 	}
