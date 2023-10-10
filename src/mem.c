@@ -9,6 +9,7 @@
 #include "mem_os.h"
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 
 
 typedef struct mem_free_block_s{
@@ -426,4 +427,34 @@ mem_free_block_t *mem_worst_fit(mem_free_block_t *first_free_block, size_t wante
 		first_free_block = first_free_block->next;
 	}
 	return adresse;
+}
+
+void *mem_realloc(void *p, size_t size){
+	if(p == NULL){
+		return mem_alloc(size);
+	}
+	if(size == 0){
+		mem_free(p);
+		return NULL;
+	}
+	struct bb * bb = find_bb(p-sizeof(struct bb));
+	if(bb == NULL){
+		return NULL;
+	}
+	struct tete* tete = (struct tete*) mem_space_get_addr();
+	mem_free_block_t * fb = tete->next;
+
+	mem_free_block_t * fb_parent = fb_before_add(fb,bb);
+	if(size <= bb->size){
+		bb->size=size;
+		fb_parent->next -= (size-bb->size);
+		(fb_parent->next)->size+=(bb->size-size);
+		return bb;
+	}
+	else{
+		void *a = mem_alloc(size);
+		memcpy(a,p,bb->size-sizeof(size_t));
+		mem_free(p);
+		return a;
+	}
 }
