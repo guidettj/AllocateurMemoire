@@ -193,7 +193,11 @@ struct bb *find_bb(void * add){
 }
 // ---------------------------------------------
 
-
+/* ---------------------------------------------
+ * Fonction fusion
+ * Prend en parametre une adresse de bloc libre
+ * Si les blocs adjacents sont libres, la fonction créer un seul bloc libre
+ */
 void fusion(mem_free_block_t *fb){
 	mem_free_block_t * parent = trouve_parent(fb);
 	mem_free_block_t * child = fb->next;
@@ -259,11 +263,12 @@ void *mem_alloc(size_t size) {
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 
 	mem_free_block_t * libre = (tete->fit)(tete->next, size + sizeof(struct bb));
-	// pas d'emplacement libre de taille `size` 
+	// Si il n'y as pas d'emplacement libre de taille `size` 
 	if (libre == NULL)
 		return NULL;
-		
+
 	mem_free_block_t * p_libre = trouve_parent(libre);
+	// Si l'emplacement libre est bfict
 	if (p_libre == NULL)
 		return NULL;
 
@@ -272,11 +277,9 @@ void *mem_alloc(size_t size) {
 	struct bb * busy = (struct bb *) libre;
 	busy->size = size;
 
-	// on ne teste pas si bb > (struct fb + size_init), 
-	// c'est deja fait dans les strategies
+	// Si il n'y a pas de place pour une zone libre
+	// on attribue toute la zone a busy
 	if(size_init - sizeof(mem_free_block_t) <= calc_bb(busy)){
-		// si <0 alors pas de place pour un struct fb
-		// on va attribuer la taille a busy
 		busy->size = size_init - sizeof(struct bb);
 		p_libre->next = next;
 	}
@@ -294,10 +297,9 @@ void *mem_alloc(size_t size) {
 //-------------------------------------------------------------
 // mem_get_size
 //-------------------------------------------------------------
-size_t mem_get_size(void * zone)
-{
-	//chercher dans fb et si ca yest pas caster en bb et on pourra recup la taille
+size_t mem_get_size(void * zone) {
 	struct bb* adrStruct = find_bb(zone);
+	//Si zone n'est pas un bb
 	if(adrStruct == NULL)
 		return 0;
 	
@@ -313,13 +315,13 @@ size_t mem_get_size(void * zone)
 void mem_free(void *zone) {
 	zone -= sizeof(struct bb);
 	struct bb * bb = find_bb(zone);
+	//Si ce n'est pas un bb renvoi NULL
 	if (bb == NULL)
 		return;
 	
 	struct tete* tete = (struct tete*) mem_space_get_addr();
 	mem_free_block_t * fb_parent = fb_before_add(tete->next, zone);
  
-    //chercher si l'adresse de la structure est bien un bb
 	size_t bb_size = calc_bb(bb);
 	mem_free_block_t* fb = (mem_free_block_t*) (bb);
 	fb->size = bb_size;
@@ -341,9 +343,6 @@ void _mem_show_bb(void (*print)(void *, size_t, int free), struct bb * bb, void 
         return;
 
     print((void *) bb, bb->size, 0);
-
-	// if(limite == mem_space_get_last_addr())
-	// 	return;
 	
     return _mem_show_bb(print, calc_add_bb(bb), limite);
 }
@@ -365,16 +364,15 @@ void _mem_show_fb(void (*print)(void *, size_t, int free), mem_free_block_t * fb
 }
 
 void mem_show(void (*print)(void *, size_t, int free)) {
-		struct tete * tete = (struct tete *) mem_space_get_addr();
-        // le premier bloc est forcement un fb, la tete est suivie du bloc fictif
-		_mem_show_fb(print, tete->next);
+	struct tete * tete = (struct tete *) mem_space_get_addr();
+	// le premier bloc est forcement un fb, la tete est suivie du bloc fictif
+	_mem_show_fb(print, tete->next);
 }
 
 //-------------------------------------------------------------
 // mem_fit
 //-------------------------------------------------------------
 void mem_set_fit_handler(mem_fit_function_t *mff) {
-	//TODO: implement
 	struct tete * tete = (struct tete *) mem_space_get_addr();
 	tete->fit = mff;
 }
@@ -400,7 +398,7 @@ mem_free_block_t *mem_best_fit(mem_free_block_t *first_free_block, size_t wanted
 	size_t diffTaille = mem_space_get_size();
 
 	while(first_free_block != NULL){
-		if(first_free_block->size > wanted_size){
+		if(first_free_block->size >= wanted_size){
 			if(diffTaille > first_free_block->size - wanted_size){
 				diffTaille = first_free_block->size - wanted_size;
 				adresse = first_free_block;
@@ -418,7 +416,7 @@ mem_free_block_t *mem_worst_fit(mem_free_block_t *first_free_block, size_t wante
 	size_t diffTaille = 0;
 
 	while(first_free_block != NULL){
-		if(first_free_block->size > wanted_size){
+		if(first_free_block->size >= wanted_size){
 			if(diffTaille < first_free_block->size - wanted_size){
 				diffTaille = first_free_block->size - wanted_size;
 				adresse = first_free_block;
@@ -438,11 +436,13 @@ void *mem_realloc(void *p, size_t size){
 		mem_free(p);
 		return NULL;
 	}
-
+	//Si la taille demandée est plus petite que struct bb, 
+	//on lui donne la taille struct bb
 	if(size < sizeof(struct bb))
 		size = sizeof(struct bb);
 
 	struct bb * bb = find_bb(p-sizeof(struct bb));
+	//Si p n'est pas l'adresse d'une zone allouée on retourne null
 	if(bb == NULL){
 		return NULL;
 	}
@@ -451,12 +451,13 @@ void *mem_realloc(void *p, size_t size){
 	mem_free_block_t * fb = tete->next;
 
 	mem_free_block_t * fb_parent = fb_before_add(fb,bb);
+	//Si la taille demandée est la même que celle que bb occupe déjà
+	//On retourne l'adresse du bloc 
 	if(size == bb->size){
 		return bb + 1;
 	}
 	else if(size < bb->size){
 		bb->size=size;
-
 		fb_parent->next -= (size-bb->size);
 		(fb_parent->next)->size+=(bb->size-size);
 		return bb + 1;
